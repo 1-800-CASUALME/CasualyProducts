@@ -1,5 +1,6 @@
 /**
- * Builds LLM requests for opportunity evaluation using Ollama (free, local, no API key).
+ * Builds LLM requests for opportunity evaluation.
+ * Works with Groq (Llama 3.3 70B) or Google Gemini — both free tiers.
  */
 
 const RUBRIC_PROMPT = `You are an expert online business analyst evaluating money-making opportunities for a solo entrepreneur with limited free time (roughly 10 hours/week). Your task is to score each opportunity objectively and pragmatically.
