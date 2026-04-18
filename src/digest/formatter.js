@@ -33,138 +33,80 @@ function categoryTag(cat) {
   return fn(`[${label}]`);
 }
 
-function formatOpportunity(opp, rank, isToday) {
+function formatOpportunity(opp, rank) {
   let actionItems = [];
   try { actionItems = JSON.parse(opp.action_items || '[]'); } catch { /* */ }
 
-  const slotLabel  = opp.scheduled_slot || '—';
+  const slotLabel  = (opp.scheduled_slot || '—').split(' ').slice(1).join(' ');
   const fitPct     = Math.round((opp.fit_score || 0) * 100);
   const earning    = opp.earning_potential ? `~$${Math.round(opp.earning_potential).toLocaleString()}/mo` : '?';
   const timeReq    = opp.time_required ? `${opp.time_required}h/wk` : '?';
   const difficulty = '★'.repeat(opp.difficulty || 3) + '☆'.repeat(5 - (opp.difficulty || 3));
   const aiLeverage = '⚡'.repeat(opp.ai_leverage || 1);
 
-  const lines = [];
-  lines.push('');
-
-  const rankLabel = isToday ? chalk.bold.white(`#${rank}`) : chalk.dim(`#${rank}`);
-  const title     = chalk.bold(opp.title.slice(0, 55));
-  const cat       = categoryTag(opp.category);
-  lines.push(`  ${rankLabel}  ${title} ${cat}`);
+  const lines = [''];
+  lines.push(`  ${chalk.bold.white(`#${rank}`)}  ${chalk.bold(opp.title.slice(0, 55))} ${categoryTag(opp.category)}`);
   lines.push(`      ${chalk.green(scoreBar(opp.fit_score || 0))} ${chalk.bold.green(`${fitPct}%`)} fit`);
   lines.push(`      Earn: ${chalk.yellow(earning)}  |  Time: ${chalk.cyan(timeReq)}  |  Difficulty: ${chalk.red(difficulty)}  |  AI: ${chalk.magenta(aiLeverage)}`);
-
-  if (opp.claude_summary) {
-    lines.push(`      ${chalk.dim(opp.claude_summary.slice(0, 90))}`);
-  }
-
+  if (opp.claude_summary) lines.push(`      ${chalk.dim(opp.claude_summary.slice(0, 90))}`);
   lines.push(`      ${chalk.bold('Slot:')} ${chalk.underline(slotLabel)}`);
-
   if (actionItems.length) {
     lines.push(`      ${chalk.bold('Actions:')}`);
     actionItems.forEach(step => lines.push(`        ${chalk.green('→')} ${step}`));
-  }
-
-  return lines.join('\n');
-}
-
-function formatWeekSchedule(weekItems) {
-  if (weekItems.length === 0) return chalk.dim('  No items scheduled this week yet.');
-
-  const byDate = {};
-  for (const item of weekItems) {
-    if (!byDate[item.scheduled_date]) byDate[item.scheduled_date] = [];
-    byDate[item.scheduled_date].push(item);
-  }
-
-  const lines = [];
-  for (const [date, items] of Object.entries(byDate)) {
-    const dayLabel = format(new Date(date + 'T12:00:00'), 'EEE MMM d');
-    lines.push(`  ${chalk.bold.white(dayLabel)}`);
-    for (const item of items) {
-      const slotTime = (item.scheduled_slot || '').split(' ').slice(1).join(' ');
-      lines.push(`    ${chalk.cyan(slotTime.padEnd(14))} ${item.title.slice(0, 45)}`);
-    }
   }
   return lines.join('\n');
 }
 
 /**
- * Build a chalk-formatted terminal string and a plain-text version.
+ * Build a chalk-formatted terminal string and a plain-text version (today only).
  *
- * @param {{ today: Array, week: Array, counts: object, date: Date }} data
+ * @param {{ today: Array, counts: object, date: Date }} data
  * @returns {{ terminal: string, plain: string }}
  */
-export function formatDigest({ today, week, counts, date }) {
+export function formatDigest({ today, counts, date }) {
   const dateLabel = format(date, 'EEE MMM d yyyy');
 
-  // ── Terminal version ──────────────────────────────────────────────
+  // ── Terminal ──────────────────────────────────────────────────
   const termLines = [];
-
   termLines.push(chalk.bold.blue(`╔${border()}╗`));
   termLines.push(chalk.bold.blue(`║${center(`AI OPPORTUNITY SCHEDULER — ${dateLabel}`)}║`));
   termLines.push(chalk.bold.blue(`╚${border()}╝`));
   termLines.push('');
 
   if (today.length === 0) {
-    termLines.push(chalk.yellow("  No opportunities scheduled for today. Run 'npm run fetch' to find new ones."));
+    termLines.push(chalk.yellow("  No opportunities for today. Run 'npm run digest' to fetch new ones."));
   } else {
     termLines.push(chalk.bold.white(`TODAY'S TOP ${today.length} OPPORTUNITIES`));
     termLines.push(chalk.dim(`  ${border('─')}`));
-    today.slice(0, 5).forEach((opp, i) => {
-      termLines.push(formatOpportunity(opp, i + 1, true));
-    });
+    today.slice(0, 5).forEach((opp, i) => termLines.push(formatOpportunity(opp, i + 1)));
   }
 
   termLines.push('');
-  termLines.push(chalk.bold.white('THIS WEEK\'S SCHEDULE'));
   termLines.push(chalk.dim(`  ${border('─')}`));
-  termLines.push(formatWeekSchedule(week));
-
-  termLines.push('');
-  termLines.push(chalk.dim(`  ${border('─')}`));
-  const raw       = counts.raw       || 0;
-  const evaluated = counts.evaluated || 0;
-  const scheduled = counts.scheduled || 0;
-  termLines.push(chalk.dim(
-    `  ${raw + evaluated + scheduled} total in DB  |  ` +
-    `${raw} new  |  ${evaluated} evaluated  |  ${scheduled} scheduled`
-  ));
-  const nextRun = format(new Date(date.getTime() + 86400000), 'EEE MMM d') + ' 6:00 AM';
-  termLines.push(chalk.dim(`  Next run: ${nextRun}`));
+  const total = (counts.raw || 0) + (counts.evaluated || 0) + (counts.scheduled || 0);
+  termLines.push(chalk.dim(`  ${total} scanned today  |  ${counts.scheduled || 0} scheduled for today`));
+  termLines.push(chalk.dim(`  Next run: ${format(new Date(date.getTime() + 86400000), 'EEE MMM d')} 6:00 AM`));
   termLines.push('');
 
-  const terminal = termLines.join('\n');
-
-  // ── Plain text version ────────────────────────────────────────────
+  // ── Plain text ────────────────────────────────────────────────
   const plainLines = [];
   plainLines.push(`AI OPPORTUNITY SCHEDULER — ${dateLabel}`);
   plainLines.push('='.repeat(WIDTH));
   plainLines.push('');
-  plainLines.push("TODAY'S OPPORTUNITIES");
-  plainLines.push('-'.repeat(WIDTH));
   if (today.length === 0) {
     plainLines.push('  No opportunities scheduled today.');
   } else {
     today.slice(0, 5).forEach((opp, i) => {
       let actionItems = [];
       try { actionItems = JSON.parse(opp.action_items || '[]'); } catch { /* */ }
+      const slot = (opp.scheduled_slot || '').split(' ').slice(1).join(' ');
       plainLines.push(`#${i + 1}  ${opp.title}`);
-      plainLines.push(`    Fit: ${Math.round((opp.fit_score || 0) * 100)}%  |  Earn: ~$${Math.round(opp.earning_potential || 0)}/mo  |  Slot: ${opp.scheduled_slot}`);
+      plainLines.push(`    Fit: ${Math.round((opp.fit_score || 0) * 100)}%  |  Earn: ~$${Math.round(opp.earning_potential || 0)}/mo  |  Slot: ${slot}`);
       if (opp.claude_summary) plainLines.push(`    ${opp.claude_summary}`);
       actionItems.forEach(step => plainLines.push(`    → ${step}`));
       plainLines.push('');
     });
   }
 
-  plainLines.push("THIS WEEK'S SCHEDULE");
-  plainLines.push('-'.repeat(WIDTH));
-  week.forEach(item => {
-    const slotTime = (item.scheduled_slot || '').split(' ').slice(1).join(' ');
-    plainLines.push(`  ${item.scheduled_date}  ${slotTime.padEnd(12)}  ${item.title.slice(0, 50)}`);
-  });
-
-  const plain = plainLines.join('\n');
-
-  return { terminal, plain };
+  return { terminal: termLines.join('\n'), plain: plainLines.join('\n') };
 }

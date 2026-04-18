@@ -26,12 +26,11 @@ const CATEGORY_EMOJI = {
 };
 
 /**
- * Send the daily digest to a Discord channel via webhook.
- * Free, no API key — just a webhook URL from channel settings.
+ * Send today-only digest to Discord via webhook (rich embeds).
  *
- * @param {{ today: Array, week: Array, counts: object, date: Date }} data
+ * @param {{ today: Array, counts: object, date: Date }} data
  */
-export async function sendDiscord({ today, week, counts, date }) {
+export async function sendDiscord({ today, counts, date }) {
   if (!WEBHOOK_URL) {
     logger.warn('Discord not configured — skipping (set DISCORD_WEBHOOK_URL in .env)');
     return;
@@ -46,10 +45,10 @@ export async function sendDiscord({ today, week, counts, date }) {
   embeds.push({
     title:       `🗓 AI Opportunity Scheduler — ${dateLabel}`,
     description: today.length === 0
-      ? "📭 No opportunities scheduled today. Run a fetch to find new ones."
-      : `Found **${total}** opportunities · **${counts.scheduled || 0}** scheduled this week`,
-    color: 0x5865f2,
-    footer: { text: `Next run: tomorrow at 6:00 AM` },
+      ? '📭 No opportunities for today yet.'
+      : `Scanned **${total}** opportunities · **${counts.scheduled || 0}** picked for today`,
+    color:     0x5865f2,
+    footer:    { text: 'Next run: tomorrow at 6:00 AM' },
     timestamp: date.toISOString(),
   });
 
@@ -71,12 +70,12 @@ export async function sendDiscord({ today, week, counts, date }) {
       description: opp.claude_summary?.slice(0, 150) || '',
       color,
       fields: [
-        { name: '📊 Fit Score',   value: `**${fitPct}%**`,                      inline: true },
-        { name: '💰 Potential',   value: earning,                                inline: true },
-        { name: '⏰ Slot',        value: slot,                                   inline: true },
-        { name: '⚡ AI Leverage', value: '⚡'.repeat(opp.ai_leverage || 1),      inline: true },
-        { name: '🎯 Difficulty',  value: `${'★'.repeat(opp.difficulty || 3)}`,  inline: true },
-        { name: '🕐 Time/week',  value: `${opp.time_required || '?'}h`,          inline: true },
+        { name: '📊 Fit Score',   value: `**${fitPct}%**`,                     inline: true },
+        { name: '💰 Potential',   value: earning,                               inline: true },
+        { name: '⏰ Time Slot',   value: slot,                                  inline: true },
+        { name: '⚡ AI Leverage', value: '⚡'.repeat(opp.ai_leverage || 1),     inline: true },
+        { name: '🎯 Difficulty',  value: '★'.repeat(opp.difficulty || 3),      inline: true },
+        { name: '🕐 Time/week',   value: `${opp.time_required || '?'}h`,        inline: true },
         ...(actionItems.length ? [{
           name:   '✅ Action Items',
           value:  actionItems.slice(0, 3).map(s => `→ ${s}`).join('\n'),
@@ -86,23 +85,6 @@ export async function sendDiscord({ today, week, counts, date }) {
     });
   });
 
-  // ── Week schedule embed ───────────────────────────────────────
-  if (week.length > 0) {
-    const scheduleLines = week.map(item => {
-      const day   = new Date(item.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short' });
-      const slot  = (item.scheduled_slot || '').split(' ').slice(1).join(' ');
-      const emoji = CATEGORY_EMOJI[item.category] || '💡';
-      return `${emoji} **${day}** ${slot} — ${item.title.slice(0, 45)}`;
-    });
-
-    embeds.push({
-      title:       '📅 This Week\'s Schedule',
-      description: scheduleLines.join('\n'),
-      color:       0x5865f2,
-    });
-  }
-
-  // Discord allows max 10 embeds per message
   await axios.post(WEBHOOK_URL, { embeds: embeds.slice(0, 10) }, {
     headers: { 'Content-Type': 'application/json' },
     timeout: 10000,

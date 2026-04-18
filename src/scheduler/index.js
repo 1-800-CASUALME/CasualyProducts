@@ -24,9 +24,9 @@ export async function scheduleTopOpportunities() {
     return { scheduled: 0 };
   }
 
-  const slots = getAvailableSlots(new Date(), 7);
+  const slots = getAvailableSlots(new Date(), 1);
   if (slots.length === 0) {
-    logger.warn('No available time slots in the next 7 days (check config/schedule.js)');
+    logger.warn("No free time slots today (check config/schedule.js for today's day)");
     return { scheduled: 0 };
   }
 

@@ -12,13 +12,12 @@ const CATEGORY_EMOJI = {
 };
 
 /**
- * Format the digest as a concise WhatsApp-friendly plain-text message.
- * Emojis replace colors, kept under 4000 chars total.
+ * Format today-only digest as a concise WhatsApp-friendly message.
  *
- * @param {{ today: Array, week: Array, counts: object, date: Date }} data
+ * @param {{ today: Array, counts: object, date: Date }} data
  * @returns {string}
  */
-export function formatWhatsAppDigest({ today, week, counts, date }) {
+export function formatWhatsAppDigest({ today, counts, date }) {
   const dateLabel = format(date, 'EEE MMM d');
   const lines = [];
 
@@ -26,9 +25,9 @@ export function formatWhatsAppDigest({ today, week, counts, date }) {
   lines.push('━━━━━━━━━━━━━━━━━━━━━━');
 
   if (today.length === 0) {
-    lines.push("📭 No opportunities scheduled today. Run a fetch to find new ones.");
+    lines.push('📭 No opportunities for today yet.');
   } else {
-    lines.push(`\n🔥 *TODAY'S TOP PICKS*\n`);
+    lines.push(`\n🔥 *TODAY\'S TOP PICKS*\n`);
 
     today.slice(0, 3).forEach((opp, i) => {
       let actionItems = [];
@@ -50,22 +49,9 @@ export function formatWhatsAppDigest({ today, week, counts, date }) {
     });
   }
 
-  // This week mini-schedule
-  if (week.length > 0) {
-    lines.push('━━━━━━━━━━━━━━━━━━━━━━');
-    lines.push(`📅 *THIS WEEK*\n`);
-    week.forEach(item => {
-      const day  = format(new Date(item.scheduled_date + 'T12:00:00'), 'EEE');
-      const slot = (item.scheduled_slot || '').split(' ').slice(1).join(' ');
-      const emoji = CATEGORY_EMOJI[item.category] || '💡';
-      lines.push(`${emoji} ${day} ${slot} — ${item.title.slice(0, 40)}`);
-    });
-    lines.push('');
-  }
-
   lines.push('━━━━━━━━━━━━━━━━━━━━━━');
   const total = (counts.raw || 0) + (counts.evaluated || 0) + (counts.scheduled || 0);
-  lines.push(`📥 ${total} opportunities scanned  |  ✅ ${counts.scheduled || 0} scheduled`);
+  lines.push(`📥 ${total} scanned  |  ✅ ${counts.scheduled || 0} for today`);
   lines.push(`⏰ Next run: ${format(addDays(date, 1), 'EEE MMM d')} at 6:00 AM`);
 
   return lines.join('\n');
