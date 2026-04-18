@@ -4,6 +4,7 @@ import { formatDigest }          from './formatter.js';
 import { saveDigest }            from './writer.js';
 import { sendWhatsApp }          from '../notifier/whatsapp.js';
 import { formatWhatsAppDigest }  from '../notifier/mobileFormatter.js';
+import { sendDiscord }           from '../notifier/discord.js';
 import { logger }                from '../utils/logger.js';
 
 /**
@@ -28,7 +29,8 @@ export async function generateDigest(date = new Date()) {
   upsertDigest(todayStr, plain);
   logger.info(`Digest saved → ${filepath}`);
 
-  // Send to WhatsApp (silently skipped if not configured)
+  // Notifications — silently skipped if not configured
   const whatsappText = formatWhatsAppDigest({ today, week, counts, date });
   await sendWhatsApp(whatsappText);
+  await sendDiscord({ today, week, counts, date });
 }
