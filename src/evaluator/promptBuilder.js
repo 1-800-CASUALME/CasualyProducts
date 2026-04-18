@@ -29,16 +29,16 @@ For each opportunity, produce the following fields:
 
 5. **fit_score** (number 0.0-1.0): Overall composite fit for a time-constrained solo entrepreneur. Weight: earning_potential 35%, ai_leverage 30%, low difficulty 20%, low time required 15%.
 
-6. **claude_summary** (string): One sentence explaining the opportunity and why it scored as it did.
+6. **claude_summary** (string): One sentence — what is this, and what makes it worth trying RIGHT NOW.
 
-7. **action_items** (array of 3 strings): Specific, immediately actionable first steps with estimated time in parentheses. Example: "Research top 5 competitors on Google (20 min)".
+7. **action_items** (array of 3 strings): Literal beginner execution steps for someone starting TODAY with no prior knowledge. Each step must be specific enough to do without Googling anything extra. Include the exact website, tool, or platform to use. Bad example: "Research competitors (20 min)". Good example: "Go to gumroad.com, click 'Start selling', create a free account with your email, then browse the top 10 best-selling digital products in your niche to see what's working (25 min)". Format: the step description followed by time in parentheses.
 
 ## Output Format
 
-Return ONLY a valid JSON array. No markdown fences, no prose. Each element must have all 7 fields plus the "id" from the input.
+Return ONLY a valid JSON array. No markdown fences, no prose, no explanation. Each element must have all 7 fields plus the "id" from the input.
 
 Example:
-[{"id":1,"time_required":3,"earning_potential":800,"difficulty":2,"ai_leverage":4,"fit_score":0.78,"claude_summary":"...","action_items":["Step 1 (20 min)","Step 2 (30 min)","Step 3 (15 min)"]}]`;
+[{"id":1,"time_required":3,"earning_potential":800,"difficulty":2,"ai_leverage":4,"fit_score":0.78,"claude_summary":"...","action_items":["Go to X and do Y specifically (20 min)","Open ChatGPT at chat.openai.com and paste this exact prompt: ... (30 min)","Go to Z, sign up free, then do W (15 min)"]}]`;
 
 /**
  * Build the messages array for an Ollama chat call.
