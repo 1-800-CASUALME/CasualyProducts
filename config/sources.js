@@ -10,12 +10,7 @@ export const SOURCES = [
   { type: 'hn', name: 'hn:ask',  tags: 'ask_hn',  query: 'money AI income earn' },
   { type: 'hn', name: 'hn:show', tags: 'show_hn', query: 'AI SaaS launch revenue product' },
 
-  // RSS feeds — high-signal newsletters and communities
-  {
-    type: 'rss',
-    name: 'rss:indiehackers',
-    url: 'https://www.indiehackers.com/feed.rss',
-  },
+  // RSS feeds — verified working
   {
     type: 'rss',
     name: 'rss:producthunt-ai',
@@ -28,7 +23,17 @@ export const SOURCES = [
   },
   {
     type: 'rss',
-    name: 'rss:bensbites',
-    url: 'https://bensbites.beehiiv.com/feed',
+    name: 'rss:techcrunch-ai',
+    url: 'https://techcrunch.com/category/artificial-intelligence/feed/',
+  },
+  {
+    type: 'rss',
+    name: 'rss:venturebeat-ai',
+    url: 'https://venturebeat.com/category/ai/feed/',
+  },
+  {
+    type: 'rss',
+    name: 'rss:hacker-news-best',
+    url: 'https://hnrss.org/best',
   },
 ];
